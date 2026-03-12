@@ -1,3 +1,4 @@
+import multiprocessing
 from multiprocessing import Pool
 from pathlib import Path
 from typing import List, Dict, Any
@@ -110,7 +111,7 @@ class WaymoDataExtractor:
 
         for frame_idx, data in enumerate(dataset):
             frame = dataset_pb2.Frame()
-            frame.ParseFromString(bytearray(data.numpy()))
+            frame.ParseFromString(bytes(data.numpy()))
 
             if frame_idx == 0:
                 segment_name = frame.context.name
@@ -298,6 +299,7 @@ class WaymoDataExtractor:
 
 
 if __name__ == "__main__":
+    multiprocessing.set_start_method("spawn", force=True)
     parser = argparse.ArgumentParser()
     parser.add_argument("--waymo_root", type=str, required=True)
     parser.add_argument("--out_root", type=str, required=True)

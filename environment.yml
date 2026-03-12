@@ -1,0 +1,25 @@
+name: street-gaussians
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - cffi
+  - ffmpeg
+  - glib
+  - gst-plugins-base
+  - gstreamer
+  - libglib
+  - libopencv
+  - libpng
+  - libstdcxx-ng
+  - libtiff
+  - libxcb
+  - libxrender
+  - xorg-libxext
+  - xorg-libxrandr
+  - xorg-libxrender
+  - xz

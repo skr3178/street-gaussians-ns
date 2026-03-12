@@ -1,9 +1,13 @@
 data_root=$1
 cuda_id=$2
+CONDA_ENV=/media/skr/storage/conda_envs/street-gaussians
+export PATH="$CONDA_ENV/bin:$PATH"
+export LD_LIBRARY_PATH="$CONDA_ENV/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export PYTHONNOUSERSITE=1
 
 mkdir -p output/
 
-CUDA_VISIBLE_DEVICES=$cuda_id  sgn-train street-gaussians-ns \
+CUDA_VISIBLE_DEVICES=$cuda_id sgn-train street-gaussians-ns \
     --experiment_name street-gaussians-ns \
     --output_dir output/ \
     --vis viewer+wandb \
@@ -16,4 +20,4 @@ CUDA_VISIBLE_DEVICES=$cuda_id  sgn-train street-gaussians-ns \
     --undistort True \
     --segments-path segs \
     --filter_camera_id 1 \
-    --init_points_filename points3D_withlidar.txt
+    --init_points_filename points3D_withlidar.bin
