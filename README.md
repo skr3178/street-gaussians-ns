@@ -270,7 +270,13 @@ If everything works, you should see training progress like the following:
     <img width="800" alt="image" src="assets/imgs/training.png">
 </p>
 
-## 3. Exporting Results
+## 3. Pretrained Checkpoints
+
+A pretrained checkpoint (step 20000, trained on sequence `10448102132863604198` on RTX 3060 12GB) is available on HuggingFace:
+
+**[checkpoints/step-000020000.ckpt](https://huggingface.co/spaces/sangramrout/Street-Gaussians-NS/blob/main/checkpoints/step-000020000.ckpt)**
+
+## 4. Exporting Results
 
 
 ### Evaluating and Rendering
