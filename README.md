@@ -274,7 +274,7 @@ If everything works, you should see training progress like the following:
 
 A pretrained checkpoint (step 20000, trained on sequence `10448102132863604198` on RTX 3060 12GB) is available on HuggingFace:
 
-**[checkpoints/step-000020000.ckpt](https://huggingface.co/spaces/sangramrout/Street-Gaussians-NS/blob/main/checkpoints/step-000020000.ckpt)**
+**[checkpoints/step-000020000.ckpt](https://huggingface.co/sangramrout/Street-Gaussians-NS/blob/main/checkpoints/step-000020000.ckpt)**
 
 ## 4. Exporting Results
 
