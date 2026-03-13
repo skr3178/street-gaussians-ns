@@ -1,0 +1,17 @@
+# Checkpoints and training output
+output/
+*.ckpt
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Dependencies (submodules and pretrained models)
+dependencies/
+
+# Environment
+.env

@@ -72,7 +72,7 @@ The quickstart will help you get started with the street-gaussians model on a Wa
 
 ### Prerequisites
 
-Our installation steps largely follow Nerfstudio, with some added dataset-specific dependencies. You must have an NVIDIA video card with CUDA installed on the system. This library has been tested with version 11.8 of CUDA. You can find more information about installing CUDA [here](https://docs.nvidia.com/cuda/cuda-quick-start-guide/index.html).
+Our installation steps largely follow Nerfstudio, with some added dataset-specific dependencies. You must have an NVIDIA video card with CUDA installed on the system. This library has been tested with CUDA 11.8 and also works with system CUDA 12.x (tested with CUDA 12.8, Driver 590.48, RTX 3060 12GB). You can find more information about installing CUDA [here](https://docs.nvidia.com/cuda/cuda-quick-start-guide/index.html).
 
 ### Create environment
 
@@ -83,25 +83,37 @@ conda activate street-gaussians-ns
 pip install --upgrade pip
 ```
 
+> **Note:** Python 3.8 is specified by the original repo but is EOL. Python 3.10 may also work but has not been fully tested with all dependencies.
+
 ### Dependencies
 
-Install PyTorch with CUDA (this repo has been tested with CUDA 11.8) and [tiny-cuda-nn](https://github.com/NVlabs/tiny-cuda-nn).
-`cuda-toolkit` is required for building `tiny-cuda-nn`.
+Install PyTorch with CUDA and [tiny-cuda-nn](https://github.com/NVlabs/tiny-cuda-nn).
 
-For CUDA 11.8:
+**For systems with CUDA 12.x (recommended if your system CUDA is 12.x):**
+
+```bash
+pip install torch==2.1.2+cu121 torchvision==0.16.2+cu121 --extra-index-url https://download.pytorch.org/whl/cu121
+export CUDA_HOME=/usr/local/cuda
+pip install ninja git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
+```
+
+**For systems with CUDA 11.8:**
 
 ```bash
 pip install torch==2.1.2+cu118 torchvision==0.16.2+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
-
 conda install -c "nvidia/label/cuda-11.8.0" cuda-toolkit
 pip install ninja git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
 ```
 
-Install nerfstudio.
+> **Important:** PyTorch's CUDA version must match the CUDA used for compiling extensions. If your system has CUDA 12.x but you install PyTorch with cu118, `tiny-cuda-nn` and `detectron2` will fail with `CUDA version mismatch` errors. Use the cu121 PyTorch wheels with system CUDA 12.x.
+
+Install nerfstudio and gsplat.
 
 ```bash
-pip install nerfstudio==1.0.0
+pip install nerfstudio==1.0.3 gsplat==0.1.11
 ```
+
+> **Important:** The original README specified `nerfstudio==1.0.0`, which pins `gsplat==0.1.2.1`. That version has an incompatible `project_gaussians()` API and causes `TypeError: project_gaussians() missing 1 required positional argument: 'tile_bounds'` at training time. Use `nerfstudio==1.0.3` with `gsplat==0.1.11` instead (see [issue #52](https://github.com/LightwheelAI/street-gaussians-ns/issues/52), [issue #26](https://github.com/LightwheelAI/street-gaussians-ns/issues/26)).
 
 We refer to [Nerfstudio](https://github.com/nerfstudio-project/nerfstudio/blob/v1.0.3/docs/quickstart/installation.md) for more installation support.
 
@@ -125,6 +137,9 @@ pip install dependencies/nvdiffrast/
 For segments generating, which is necessary to model sky, ***Mask2Former*** is required. 
 
 ```bash
+# Set CUDA_HOME to match the CUDA used by PyTorch (system CUDA for cu121)
+export CUDA_HOME=/usr/local/cuda
+
 cd dependencies/detectron2
 pip install -e .
 
@@ -134,7 +149,14 @@ cd mask2former/modeling/pixel_decoder/ops
 sh make.sh
 ```
 
-After installing Mask2Former, we need to download the pretrained [model](https://dl.fbaipublicfiles.com/maskformer/mask2former/mapillary_vistas/semantic/maskformer2_swin_large_IN21k_384_bs16_300k/model_final_90ee2d.pkl) and place it at ```dependencies/mask2former/models```
+> **Important:** You must set `CUDA_HOME` to point to the same CUDA installation that PyTorch was compiled against before running `pip install -e .` for detectron2. Otherwise you will get `CUDA version mismatch` errors.
+
+After installing Mask2Former, we need to download the pretrained [model](https://dl.fbaipublicfiles.com/maskformer/mask2former/mapillary_vistas/semantic/maskformer2_swin_large_IN21k_384_bs16_300k/model_final_90ee2d.pkl) and place it at ```dependencies/Mask2Former/models```
+
+```bash
+mkdir -p dependencies/Mask2Former/models
+wget -P dependencies/Mask2Former/models/ https://dl.fbaipublicfiles.com/maskformer/mask2former/mapillary_vistas/semantic/maskformer2_swin_large_IN21k_384_bs16_300k/model_final_90ee2d.pkl
+```
 
 We refer to [Detectron2](https://github.com/facebookresearch/detectron2/blob/main/INSTALL.md) and [Mask2Former](https://github.com/facebookresearch/Mask2Former/blob/main/INSTALL.md) for more installation support.
 
@@ -204,12 +226,43 @@ If you want only test the model or have problem in data preprocessing, we offer 
 
 ### Training
 
-Training models is done conveniently by scripts.
+Before training, set the required environment variables:
 
 ```bash
-# Train model
+conda activate street-gaussians-ns
+export CUDA_HOME=/usr/local/cuda
+export CUDA_VISIBLE_DEVICES=0
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+```
+
+> **Important:** The `LD_LIBRARY_PATH` setting is required to resolve a `libstdc++` ABI mismatch (`CXXABI_1.3.15 not found`). The conda env's `libstdc++` has the required symbols that the system one may lack.
+
+Training using the shell script:
+
+```bash
 bash scripts/shells/train.sh path/to/your/dataset cuda_id
 ```
+
+Or run directly:
+
+```bash
+sgn-train street-gaussians-ns \
+    --experiment_name test-run \
+    --output_dir output/ \
+    --vis tensorboard \
+    --viewer.quit_on_train_completion True \
+    colmap-data-parser-config \
+    --data path/to/your/dataset \
+    --colmap_path colmap/sparse/0 \
+    --load_3D_points True \
+    --max_2D_matches_per_3D_point 0 \
+    --undistort True \
+    --segments-path segs \
+    --filter_camera_id 1 \
+    --init_points_filename points3D_withlidar.bin
+```
+
+> **Note:** The preprocessed datasets contain `points3D_withlidar.bin` (not `.txt` as referenced in `train.sh`). Use `--init_points_filename points3D_withlidar.bin` accordingly. See [issue #53](https://github.com/LightwheelAI/street-gaussians-ns/issues/53).
 
 If everything works, you should see training progress like the following:
 
